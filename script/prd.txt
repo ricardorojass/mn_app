@@ -1,0 +1,481 @@
+# Product Requirements Document (PRD)
+## International Money Transfer Management System
+
+**Version:** 1.0  
+**Date:** October 18, 2025  
+**Author:** Development Team  
+**Status:** Draft
+
+---
+
+## 1. Executive Summary
+
+### 1.1 Product Vision
+Web-based system to manage international money transfers, facilitating transaction registration, digital receipt generation, and recurring customer tracking.
+
+### 1.2 Business Objectives
+- Digitize the transfer registration process
+- Reduce data entry errors
+- Generate professional receipts instantly
+- Maintain customer and bank account database
+- Enable monthly reporting and analytics
+
+### 1.3 Success Metrics
+- Process 150+ transfers/month
+- Reduce registration time from 5min to 2min per transfer
+- 0% errors in bank account data
+- Customer satisfaction: 9/10
+- 100% receipt delivery via WhatsApp
+
+---
+
+## 2. Problem Context
+
+### 2.1 Current Problem
+**Situation:** Remittance business processes ~150 transfers/month manually
+
+**Pain Points:**
+- Customers call/text requesting transfers
+- Data recorded on paper or messy Excel sheets
+- Receipts written by hand or in Word
+- Difficult to find customer history
+- Frequent errors in account numbers
+- No standardized receipt format
+- Time-consuming process
+
+### 2.2 User Personas
+
+**Primary User: Transfer Operator**
+- Name: Ana (Business Owner)
+- Age: 35-45
+- Tech Skills: Basic
+- Needs: Fast data entry, reliable system, professional receipts
+- Pain: Manually looking up customer info every time
+
+**Secondary User: Customer**
+- Name: María (Sender)
+- Age: 25-55
+- Tech Skills: Basic smartphone user
+- Needs: Quick transfer, clear receipt, trust
+- Pain: Waiting for confirmation, unclear receipts
+
+---
+
+## 3. Product Overview
+
+### 3.1 Solution
+Rails web application with:
+- Customer database with bank accounts
+- Transfer form with auto-complete
+- Professional receipt page
+- WhatsApp sharing capability
+- Monthly reports
+
+### 3.2 Core Features (MVP)
+
+#### Feature 1: Customer Management
+- Create new customers
+- Store: name, phone, ID, bank accounts
+- Search customers by name/phone
+- View customer history
+
+#### Feature 2: Transfer Creation
+- Dynamic form with dropdowns
+- Auto-populate customer data
+- Real-time calculation (amount received, fees)
+- Select delivery method
+- Generate unique transfer ID
+
+#### Feature 3: Receipt Generation
+- Professional HTML receipt page
+- Display all transfer details
+- Shareable URL (e.g., /receipt/TRF-2025-0142)
+- Download as image option
+- Direct WhatsApp share button
+
+#### Feature 4: Transfer History
+- List all transfers
+- Filter by date, customer, status
+- Search by transfer ID
+- Monthly summary view
+
+---
+
+## 4. Technical Requirements
+
+### 4.1 Technology Stack
+
+**Backend:**
+- Ruby on Rails 8.0+
+- PostgreSQL 14+
+- Hosted on: Render.com or Fly.io
+
+**Frontend:**
+- Tailwind CSS
+- Hotwire (Turbo + Stimulus)
+- html2canvas (for image download)
+
+**APIs:**
+- WhatsApp Web Share API (native mobile)
+- Future: Twilio API for automated messaging
+
+### 4.2 Data Models
+
+**Client**
+```
+- id (uuid)
+- name (string, required)
+- phone (string, required, unique)
+- email (string, optional)
+- id_number (string)
+- id_type (string)
+- address (text)
+- notes (text)
+- created_at, updated_at
+```
+
+**BankAccount**
+```
+- id (uuid)
+- client_id (foreign key)
+- bank_name (string, required)
+- account_number (string, required)
+- account_type (string: savings/checking)
+- account_holder_name (string)
+- is_default (boolean)
+- created_at, updated_at
+```
+
+**Transfer**
+```
+- id (uuid)
+- transfer_number (string, unique, auto-generated)
+- sender_id (foreign key to Client)
+- recipient_id (foreign key to Client)
+- sender_bank_account_id (foreign key, optional)
+- recipient_bank_account_id (foreign key)
+- amount_sent (decimal 10,2)
+- currency_sent (string, default: USD)
+- exchange_rate (decimal 10,4)
+- amount_received (decimal 12,2, calculated)
+- currency_received (string, default: COP)
+- fee (decimal 8,2)
+- total_charged (decimal 10,2, calculated)
+- delivery_method (enum: bank_transfer, cash_pickup, mobile_wallet)
+- status (enum: pending, completed, cancelled)
+- notes (text)
+- completed_at (datetime)
+- created_at, updated_at
+```
+
+### 4.3 Business Rules
+
+**Transfer Number Generation**
+- Format: `TRF-YYYY-NNNN`
+- Example: `TRF-2025-0142`
+- Sequential, auto-incremented
+
+**Calculations**
+```
+amount_received = amount_sent × exchange_rate
+total_charged = amount_sent + fee
+```
+
+**Default Values**
+- Status: "completed" (for MVP)
+- Fee: $5.00 USD
+- Currency sent: USD
+- Currency received: COP
+
+---
+
+## 5. User Flows
+
+### 5.1 Create New Transfer (Happy Path)
+
+```
+1. Operator opens /transfers/new
+2. Selects sender from dropdown
+   → System loads sender's bank accounts
+3. Selects recipient from dropdown
+   → System loads recipient's bank accounts
+4. Enters:
+   - Amount to send: $500
+   - Exchange rate (TRM): 4200
+   - Fee: $5 (pre-filled)
+5. System calculates:
+   - Amount received: $2,100,000 COP
+   - Total charged: $505 USD
+6. Clicks "Create Transfer"
+7. System:
+   - Validates data
+   - Saves to database
+   - Generates transfer ID
+   - Redirects to /receipt/TRF-2025-0142
+8. Operator sees professional receipt
+9. Clicks "Share via WhatsApp"
+10. System opens WhatsApp with pre-filled message + link
+11. Operator sends to customer
+```
+
+### 5.2 Create Transfer with New Customer
+
+```
+1. Operator clicks "New Customer"
+2. Fills customer form:
+   - Name, phone, ID, bank account
+3. Saves customer
+4. Returns to transfer form
+5. New customer now appears in dropdown
+6. Continue with normal flow
+```
+
+### 5.3 View Receipt (Customer View)
+
+```
+1. Customer receives WhatsApp with link
+2. Clicks link → Opens /receipt/TRF-2025-0142
+3. Sees clean, professional receipt
+4. Can:
+   - Take screenshot
+   - Download as image
+   - Share again
+```
+
+---
+
+## 6. UI/UX Requirements
+
+### 6.1 Design Principles
+- Clean and professional
+- Mobile-responsive (operator may use tablet)
+- Fast data entry (keyboard shortcuts)
+- Clear error messages
+- Immediate visual feedback
+
+### 6.2 Key Screens
+
+**Screen 1: Transfer Form**
+- Two-column layout (Sender | Recipient)
+- Dropdowns with search
+- Real-time calculations
+- Clear visual hierarchy
+- Sticky submit button
+
+**Screen 2: Receipt Page**
+- Centered, card-style layout
+- White background
+- Professional typography
+- All transfer details visible
+- Action buttons at bottom
+- Shareable URL
+
+**Screen 3: Transfer List**
+- Table view with filters
+- Search by ID, customer, date
+- Status indicators
+- Quick actions (view, reprint)
+
+### 6.3 Mobile Considerations
+- Receipt page optimized for screenshot
+- Large touch targets (buttons)
+- Native share sheet on mobile
+- Responsive tables (stacked on mobile)
+
+---
+
+## 7. API Endpoints (Internal)
+
+### 7.1 Public Routes
+```
+GET  /                          → New transfer form
+GET  /transfers/new             → New transfer form
+POST /transfers                 → Create transfer
+GET  /transfers                 → List transfers
+GET  /transfers/:id             → Transfer details (admin)
+GET  /receipt/:id               → Public receipt view
+```
+
+### 7.2 API Routes (AJAX)
+```
+GET  /api/v1/clients                    → Search clients
+GET  /api/v1/clients/:id/bank_accounts  → Get client's accounts
+```
+
+---
+
+## 8. Security & Privacy
+
+### 8.1 Data Protection
+- Bank account numbers masked (show last 4 digits)
+- SSL/HTTPS required
+- No sensitive data in URLs (except transfer ID)
+- Receipt URLs not indexed by search engines
+
+### 8.2 Access Control (Future)
+- Basic authentication for MVP
+- Admin role for reports
+- Operator role for transfers
+- Public access only to receipts
+
+### 8.3 Compliance
+- Store customer consent for data processing
+- GDPR-style data export capability
+- Audit trail for all transfers
+
+---
+
+## 9. Non-Functional Requirements
+
+### 9.1 Performance
+- Page load time: < 2 seconds
+- Form submission: < 1 second
+- Support 50 concurrent users
+- Database queries optimized (N+1 prevention)
+
+### 9.2 Reliability
+- 99% uptime
+- Daily automated backups
+- Database replication (production)
+
+### 9.3 Scalability
+- Handle 500 transfers/month without performance degradation
+- Database can grow to 100K+ transfers
+
+### 9.4 Usability
+- No training required for basic operators
+- Intuitive UI (user testing with 3+ operators)
+- Works on Chrome, Safari, Firefox
+
+---
+
+## 10. Development Roadmap
+
+### Phase 1: MVP (Week 1-2)
+**Goal:** Basic working system
+
+**Sprint 1 (Days 1-3): Foundation**
+- [ ] Rails app setup
+- [ ] Database models & migrations
+- [ ] Seed data
+- [ ] Basic routing
+
+**Sprint 2 (Days 4-7): Core Features**
+- [ ] Transfer form with Stimulus
+- [ ] Client/bank account selection
+- [ ] Real-time calculations
+- [ ] Receipt page design
+
+**Sprint 3 (Days 8-10): Polish**
+- [ ] WhatsApp share button
+- [ ] Download as image
+- [ ] Transfer list view
+- [ ] Error handling
+
+**Sprint 4 (Days 11-14): Testing & Deploy**
+- [ ] User testing with operator
+- [ ] Bug fixes
+- [ ] Deploy to Render/Fly.io
+- [ ] Training session
+
+### Phase 2: Enhancements (Week 3-4)
+- [ ] Customer management CRUD
+- [ ] Advanced search/filters
+- [ ] Monthly reports
+- [ ] Export to Excel
+- [ ] Dashboard with stats
+
+### Phase 3: Automation (Month 2)
+- [ ] Twilio WhatsApp API integration
+- [ ] Automated receipt sending
+- [ ] SMS notifications
+- [ ] Email receipts (backup)
+
+### Phase 4: Advanced (Month 3+)
+- [ ] Multi-user authentication
+- [ ] Role-based permissions
+- [ ] Audit logs
+- [ ] API for mobile app
+- [ ] Customer portal (self-service)
+
+---
+
+## 11. Success Criteria
+
+### 11.1 Launch Criteria (MVP)
+- [ ] Can create transfer in < 2 minutes
+- [ ] Receipt generates correctly 100% of time
+- [ ] WhatsApp share works on mobile
+- [ ] No data loss (all transfers saved)
+- [ ] Operator trained and confident
+
+### 11.2 Post-Launch (30 days)
+- [ ] 150+ transfers processed
+- [ ] < 5 bugs reported
+- [ ] 90%+ operator satisfaction
+- [ ] Zero critical errors
+
+---
+
+## 12. Risks & Mitigations
+
+| Risk | Impact | Probability | Mitigation |
+|------|--------|-------------|------------|
+| Operator doesn't adopt system | High | Medium | User testing, training, gradual rollout |
+| WhatsApp share doesn't work | Medium | Low | Fallback: copy link + manual paste |
+| Data loss | Critical | Low | Daily backups, test restore process |
+| Slow performance | Medium | Low | Database indexing, query optimization |
+| Customer doesn't receive receipt | Medium | Medium | Multiple delivery options (WhatsApp, SMS, email) |
+
+---
+
+## 13. Open Questions
+
+- [ ] Should we support multiple currencies beyond USD/COP?
+- [ ] Do we need customer authentication (portal)?
+- [ ] Should receipts expire after X days?
+- [ ] Multi-language support (English/Spanish)?
+- [ ] Integration with accounting software?
+
+---
+
+## 14. Out of Scope (V1)
+
+These features are explicitly NOT included in MVP:
+
+- ❌ Automated bank transfers (API integration)
+- ❌ Payment processing (Stripe, PayPal)
+- ❌ Customer self-service portal
+- ❌ Mobile app (native iOS/Android)
+- ❌ Real-time exchange rate API
+- ❌ Multi-currency wallet
+- ❌ KYC/AML compliance automation
+- ❌ Franchise/multi-location support
+
+---
+
+## 15. Appendix
+
+### 15.1 Glossary
+- **TRM:** Tasa Representativa del Mercado (exchange rate)
+- **Remittance:** International money transfer
+- **KYC:** Know Your Customer
+- **AML:** Anti-Money Laundering
+
+### 15.2 References
+- Rails 8 Documentation: https://guides.rubyonrails.org
+- Tailwind CSS: https://tailwindcss.com
+- Hotwire: https://hotwired.dev
+
+### 15.3 Document History
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | Oct 18, 2025 | Development Team | Initial draft |
+
+---
+
+## 16. Approval
+
+**Product Owner:** _________________ Date: _______  
+**Tech Lead:** _________________ Date: _______  
+**Stakeholder:** _________________ Date: _______
