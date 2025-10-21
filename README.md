@@ -4,8 +4,9 @@ Web application for managing international money transfers with automated receip
 
 ## Features
 
-- 👥 Customer database with bank account management
+- 👥 Sender and recipient management with relationship tracking
 - 💸 Transfer form with real-time exchange rate calculations
+- 🏦 Bank account management for recipients
 - 🧾 Professional receipt pages with shareable links
 - 📱 WhatsApp sharing capability
 - 📊 Transfer history and search
@@ -47,13 +48,22 @@ Visit: http://localhost:3000
 
 ### Creating a Transfer
 
-1. Navigate to "New Transfer"
-2. Select sender from dropdown (or create new customer)
-3. Select recipient from dropdown
-4. Choose bank accounts
-5. Enter amount and exchange rate
-6. System calculates totals automatically
-7. Submit to generate receipt
+1. Admin logs in
+2. Navigate to "New Transfer"
+3. Type sender's name or phone in search input
+4. Submit search
+5. System gets existing sender OR shows form to create new sender
+6. If sender has recipients:
+   - Second part of form appears with recipient selector
+   - Third part shows bank account selector
+7. If sender has NO recipients:
+   - Second part of form shows empty fields to create new recipient
+   - Third part shows fields to add bank account
+8. Select recipient and bank account (if existing)
+9. Enter amount and exchange rate
+10. System calculates totals automatically (amount received, total charged)
+11. Submit form to create transfer
+12. Redirect to receipt page with shareable URL
 
 ### Sharing Receipt
 
@@ -64,18 +74,30 @@ After creating transfer:
 
 ## Database Schema
 
-**Clients**
-- Name, phone, email, ID number
+
+**Users (Admin/Operators)**
+- Authentication and role management
+- Creates senders and transfers
+
+**Senders**
+- People who send money (pay in cash)
+- Has many recipients
+- Located in USA typically
+
+**Recipients**
+- People who receive money
+- Belong to a sender (1 sender → many recipients)
+- Located in Colombia typically
 - Has many bank accounts
 
-**Bank Accounts**
-- Bank name, account number, account type
-- Belongs to client
+**Recipient Bank Accounts**
+- Bank details for receiving transfers
+- Multiple accounts per recipient supported
+- One marked as default
 
 **Transfers**
-- Sender/recipient (clients)
-- Amount, exchange rate, fee
-- Status, delivery method
+- Transaction records
+- Links sender → recipient → bank account
 - Auto-generated transfer ID (TRF-YYYY-NNNN)
 
 ## Development
