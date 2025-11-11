@@ -1,0 +1,20 @@
+fix: false
+parallel: true
+formtat: progress
+
+ignore:
+  - 'db/migrate/**/*'
+  - 'db/schema.rb'
+  - 'bin/**/*'
+  - 'Gemfile'
+  - 'Gemfile.lock'
+  - 'node_modules/**'
+  - 'vendor/**'
+  - 'config/environments/**'
+  - 'config/application.rb'
+  - 'config/boot.rb'
+  - 'config/puma.rb'
+
+plugins:
+  -standard-rails:
+    target_rails_version: '8.0'
